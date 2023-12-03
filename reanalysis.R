@@ -603,8 +603,26 @@ library(iCAMP)
 library(phyloseq)
 library(ape)
 library(readr)
-#save(ASV_Munida_Kelp,file="ASV_Munida_Kelp_27Apr.RData")
-#save(ASV_InPlace,file="ASV_InPlace_27Apr.RData")
+comm=t(ASV_InPlace@otu_table@.Data)
+tree=ASV_InPlace@phy_tree
+meta.group=data.frame(ASV_InPlace@sam_data$Location,row.names=sample_names(ASV_InPlace))
+icamp_broad_inplace<-icamp.cm(comm=t(ASV_InPlace@otu_table@.Data) ,
+                         tree=ASV_InPlace@phy_tree,
+                         meta.group=data.frame(ASV_InPlace@sam_data$Location,row.names=sample_names(ASV_InPlace)),
+                         phylo.metric = "bMNTD",
+                         sig.index = "Confidence",nworker = 8,
+                         bin.size.limit=48,pd.wd="./inplace_icamp/",rand = 1000)
+comm=t(ASV_Munida_Kelp@otu_table@.Data)
+tree=ASV_Munida_Kelp@phy_tree
+meta.group=data.frame(ASV_Munida_Kelp@sam_data$Location,row.names=sample_names(ASV_Munida_Kelp))
+icamp_broad_munida<-icamp.cm(comm=t(ASV_Munida_Kelp@otu_table@.Data),
+                             tree=ASV_Munida_Kelp@phy_tree,
+                             meta.group=data.frame(ASV_Munida_Kelp@sam_data$Location,row.names=sample_names(ASV_Munida_Kelp)),
+                             phylo.metric = "bMNTD",
+                             sig.index = "Confidence",nworker = 8,
+                             bin.size.limit=48,pd.wd="./munida_icamp/",rand = 1000)
+
+icamp_broad_munida
 icamp_broad_munida<-readr::read_rds("../../icamp_broad_munida.RDS")
 icamp_broad_inplace<-readr::read_rds("../../icamp_broad_inplace.RDS")
 q<-rbind(colSums(icamp_broad_munida$CbMNTDiCBraya[,3:7])/sum(colSums(icamp_broad_munida$CbMNTDiCBraya[,3:7])),
