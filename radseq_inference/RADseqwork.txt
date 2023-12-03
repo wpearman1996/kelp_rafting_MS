@@ -1,0 +1,44 @@
+# First we demultiplex and QC the data - example code below
+cutadapt -j 4 -a AGATCGGAAGAGC -A AGATCGGAAGAGC  -m 76:76  -q 25 --overlap 5 -o temp5    -p  temp6 GBS_Kelp_CF1_S1_R1_001.fastq  GBS_Kelp_CF1_S1_R2_001.fastq
+cutadapt -j 4 -a  GGGGGGGGGGGGG  -A GGGGGGGGGGGGG  -m 76:76  -q 25 --overlap 5 -o trimmed_GBS_Kelp_CF1_S1_R1_001.fastq    -p trimmed_GBS_Kelp_CF1_S1_R2_001.fastq      temp5 temp6 # remove homopolymers
+
+fastqc  trimmed_GBS_Kelp_CF1_S1_R1_001.fastq trimmed_GBS_Kelp_CF1_S1_R2_001.fastq
+
+process_radtags -1 ./fastqs/trimmed_GBS_Kelp_CF1_S1_R1_001.fastq \
+                -2 ./fastqs/trimmed_GBS_Kelp_CF1_S1_R2_001.fastq \
+                -P -o ./demultiplexed_CF1/ \
+                -t 68 -b ./metadata_and_scripts/newsamples_barcodes.txt -e pstI --threads 4 -r -c -q --inline-inline
+
+
+
+# We the align to a reference genome:
+
+files=$(ls ./demultiplexed_CF1/*fastq)
+bwa_db=genome.fasta
+for sample in $files
+do 
+    bwa mem -t 24 $bwa_db $sample|   samtools view -b | samtools sort --threads 24 > ${sample}.bam
+    gzip $sample
+    mv ${sample}.bam ~/bams
+done
+
+
+mkdir output_refmap
+ref_map.pl --samples ~/bams --popmap popmap_allsamples.tsv -T 6 -o output_refmap
+
+populations -P output_refmap/  -M popmap_nzonly.tsv  --vcf -p 1 -r 0.2 -O clean --vcf --min-mac 2
+
+bcftools stats --samples '-' populations.snps.vcf
+
+#We discard samples with an nRefHom < 5000
+
+vcftools --vcf populations.snps.vcf --out nomunida_clean --recode --remove ../lowcount_inds.txt 
+vcftools --vcf nomunida_clean.recode.vcf --mac 2 --minDP 5 --max-missing 0.8 --out filtered_clean --recode
+cut -f 1,2 filtered_clean.recode.vcf  | grep -v "#" | sort | uniq > whitelist.txt
+
+
+vcftools --vcf populations.snps.vcf --out for_analysis_WL --recode --remove ../lowcount_inds.txt --positions whitelist.txt 
+vcftools --vcf for_analysis.recode.vcf --recode --keep nz_pruned.keep --out NZ_Only_pruned 
+
+python3 vcf2phylip.py -i ./output_refmap/NZ_Only_pruned.recode.vcf
+iqtree2 -nt 16 -s nz_pruned.recode.min4.phy -st DNA -m MFP -bb 1000  -pre NZ_Only_pruned --redo -bnni
