@@ -1023,45 +1023,6 @@ ggsave("dis_icamp.pdf",dis_icamp,width = 9,height=3)
 
 
 ################ ########## SVP Violin plots
-sst_rafts<-readr::read_rds("../../SST_Raft_Data/raftsds(1).RDS")
-sst_rafts<-lapply(sst_rafts,function(x){
-  RaftSD=median(x$RaftSD,na.rm=T)
-  StaticSD=median(x$StaticSD,na.rm=T)
-  data.frame(RaftSD=RaftSD,StaticSD=StaticSD)
-})
-overall_traj_sstsd<-as.data.frame(do.call("rbind",sst_rafts))
-overall_traj_sstsd<-reshape2::melt(overall_traj_sstsd)
-t.test(overall_traj_sstsd$value~overall_traj_sstsd$variable)
-drift_SD_vilplot<-overall_traj_sstsd %>%
-  ggplot() +
-  aes(x = variable, y = value,fill=variable) +
-  theme_minimal() + geom_violin(adjust = 1L, scale = "area") +  
-  theme_classic2()+ theme(text = element_text(size=18,face="bold"),legend.position="none") +
-  geom_signif(comparisons = c("RaftSD","StaticSD"), step_increase = 0.01,
-              map_signif_level=TRUE,test = "t.test") +ylab("SST SD") +
-  stat_summary(fun.data=data_summary) +
-  scale_fill_manual(
-    values = c(`RaftSD` = "#5DBB63",
-               `StaticSD` = "#3281a8")) 
-
-svp_validation_data<-read.csv("svp_validation_data.csv")
-svp_vilplot<-svp_validation_data %>%
-  #filter(!is.na(Raft)) %>%
-  ggplot() +
-  aes(x = Type, y = SVP_SD,fill=Type) +
-  theme_minimal() + geom_violin(adjust = 1L, scale = "area") +  
-  theme_classic2()+ theme(text = element_text(size=16,face="bold"),legend.position="none") +
-  geom_signif(comparisons = c("Actual","Inferred"), step_increase = 0.01,
-              map_signif_level=TRUE,test = "t.test") +ylab("SST SD") +
-   stat_summary(fun.data=data_summary) +
-  scale_fill_manual(
-    values = c(`Actual` = "#5DBB63",
-               `Inferred` = "#3281a8")) 
-svp_vilplot
-
-
-
-###################
 #SVP Validation code
 library(readr)
 chunks<-list.files("../../SVP_Validation_nocollisions/RDS_Zipped/",pattern="*chunk_coords_sst.RDS",full.names = T)
