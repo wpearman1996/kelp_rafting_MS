@@ -25,3 +25,8 @@ ternary_plots.R - code to produce ternary analysis of microbiomes
 
 RADseqwork.txt - code used to demultiplex and SNP call RADseq data, and filter it, and then create phylogenetic trees. 
 
+
+pearman_kelprafting_OpenDrift.py - code to execute the opendrift modelling
+
+
+kelp_raft.zip - data to utilize in the opendrift modelling. 
