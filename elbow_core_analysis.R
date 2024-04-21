@@ -86,20 +86,42 @@ fo_difference <- function(pos){
 BC_ranked$fo_diffs <- sapply(1:nrow(BC_ranked), fo_difference)
 elbow <- which.max(BC_ranked$fo_diffs)
 
-lastCall <- last(as.numeric(as.character(BC_ranked$rank[(BC_ranked$IncreaseBC>=1.02)])))
+lastCall <- last(as.numeric(as.character(BC_ranked$rank[(BC_ranked$IncreaseBC>=1.03)])))
 
-graph<-ggplot(BC_ranked[1:200,], aes(x=factor(BC_ranked$rank[1:200], levels=BC_ranked$rank[1:200]))) +
+graph<-ggplot(BC_ranked[1:50,], aes(x=factor(BC_ranked$rank[1:50], levels=BC_ranked$rank[1:50]))) +
   geom_point(aes(y=proportionBC)) +
   theme_classic() + theme(strip.background = element_blank(),axis.text.x = element_text(size=7, angle=45)) +
-  geom_vline(xintercept=elbow, lty=3, col='red', cex=.5) +
+  #geom_vline(xintercept=elbow, lty=3, col='red', cex=.5) +
   geom_vline(xintercept=lastCall, lty=3, col='blue', cex=.5) +
   labs(x='ranked OTUs',y='Bray-Curtis similarity') +
-  annotate(geom="text", x=elbow+10, y=.15, label=paste("Elbow method"," (",elbow,")", sep=''), color="red")+    
+  #annotate(geom="text", x=elbow+10, y=.15, label=paste("Elbow method"," (",elbow,")", sep=''), color="red")+    
   annotate(geom="text", x=lastCall-4, y=.08, label=paste("Last 2% increase (",lastCall,')',sep=''), color="blue")
+occ_abun$fill <- 'no'
+occ_abun$fill[occ_abun$otu %in% otu_ranked$otu[1:lastCall]] <- 'core'
+
+spp=t(otu)
+taxon=as.vector(rownames(otu))
+
+#Models for the whole community
+obs.np=sncm.fit(spp, taxon, stats=FALSE, pool=NULL)
+sta.np=sncm.fit(spp, taxon, stats=TRUE, pool=NULL)
+sta.np.16S <- sta.np
+
+above.pred=sum(obs.np$freq > (obs.np$pred.upr), na.rm=TRUE)/sta.np$Richness
+below.pred=sum(obs.np$freq < (obs.np$pred.lwr), na.rm=TRUE)/sta.np$Richness
+
+sncmplot<-ggplot() +
+  geom_point(data=occ_abun[occ_abun$fill=='no',], aes(x=log10(otu_rel), y=otu_occ), pch=21, fill='white', alpha=.2)+
+  geom_point(data=occ_abun[occ_abun$fill!='no',], aes(x=log10(otu_rel), y=otu_occ), pch=21, fill='blue', size=1.8) +
+  geom_line(color='black', data=obs.np, size=1, aes(y=obs.np$freq.pred, x=log10(obs.np$p)), alpha=.25) +
+  geom_line(color='black', lty='twodash', size=1, data=obs.np, aes(y=obs.np$pred.upr, x=log10(obs.np$p)), alpha=.25)+
+  geom_line(color='black', lty='twodash', size=1, data=obs.np, aes(y=obs.np$pred.lwr, x=log10(obs.np$p)), alpha=.25)+
+  labs(x="log10(mean relative abundance)", y="Occupancy")
+
 
 otu_ranked<-otu_ranked
 last_call<-lastCall
-output<-list(graph,otu_ranked,lastCall,BC_ranked)
+output<-list(graph,otu_ranked,lastCall,BC_ranked,sncmplot)
 output
 }
 create_core_func_comm<-function(physeq,nReads){
@@ -200,13 +222,17 @@ create_core_func_comm<-function(physeq,nReads){
     annotate(geom="text", x=elbow+10, y=.15, label=paste("Elbow method"," (",elbow,")", sep=''), color="red")+    
     annotate(geom="text", x=lastCall-4, y=.08, label=paste("Last 2% increase (",lastCall,')',sep=''), color="blue")
   
+
+  
+  
   otu_ranked<-otu_ranked
   last_call<-lastCall
-  output<-list(graph,otu_ranked,lastCall)
+  output<-list(graph,otu_ranked,lastCall,)
   output
 }
 
 core_raft<-create_core_comm(ASV_Munida_Kelp,4000)
+library(phyloseq);library(ggplot2)
 core_inplace<-create_core_comm(ASV_InPlace,4000)
 core_macro[[4]]$MeanBC
 
@@ -214,7 +240,7 @@ ASV_function
 core_func_poha<-create_core_func_comm(ASV_function_poha,3000)
 core_func_ant<-create_core_comm(ASV_function_Ant,3000)
 
-
+core_inplace[[5]]
 core_raft[[1]]
 core_inplace[[2]]$otu[1:10]
 core_raft[[2]]$otu[1:4]
