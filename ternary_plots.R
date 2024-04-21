@@ -1,5 +1,7 @@
-ASV_InPlace<-readr::read_rds("../Kelp_Rafting_MS/Munida_Analysis/ASV_InPlace.RDS")
-ASV_Munida_Kelp<-readr::read_rds("../Kelp_Rafting_MS/Munida_Analysis/ASV_Munida_Kelp.RDS")
+
+ASV_InPlace<-readr::read_rds("../../Munida_Analysis/ASV_InPlace.RDS")
+ASV_Munida_Kelp<-readr::read_rds("../../Munida_Analysis/ASV_Munida_Kelp.RDS")
+library(phyloseq)
 
 ASV_InPlace_temp<-prune_taxa(taxa_names(ASV_InPlace)[taxa_sums(ASV_InPlace)>0],ASV_InPlace)
 ASV_Munida_Kelp_temp<-prune_taxa(taxa_names(ASV_Munida_Kelp)[taxa_sums(ASV_Munida_Kelp)>0],ASV_Munida_Kelp)
@@ -7,7 +9,14 @@ ASV_InPlace_temp<-prune_taxa(taxa_names(ASV_InPlace_temp)[taxa_sums(ASV_InPlace_
 ASV_InPlace_temp<-prune_samples(ASV_InPlace_temp@sam_data$Sample[!ASV_InPlace_temp@sam_data$Location %in% c("Wainui","Ward","Kaikoura","CapeCampbell","LeBons","Rarangi")],
                            ASV_InPlace_temp)
 ASV_InPlace_temp<-prune_taxa(taxa_names(ASV_InPlace_temp)[taxa_sums(ASV_InPlace_temp)>0],ASV_InPlace_temp)
+
+
+
+
 core_inplace<-create_core_comm(ASV_InPlace_temp,4000)
+#core_inplace[[1]]
+core_plots<-cowplot::plot_grid(core_inplace[[1]],core_inplace[[5]],nrow=1)
+ggsave(file="../../coreplots_supp.pdf",core_plots,width=6,height=3)
 core_raft<-create_core_comm(ASV_Munida_Kelp_temp,4000)
 
 library(phyloseq)
